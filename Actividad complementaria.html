@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misión Luna: Versión Compacta</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;900&display=swap');
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #020617;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 500px;
+            height: 100%;
+            max-height: 600px;
+            background-image: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            padding: 10px;
+        }
+
+        /* Estrellas */
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: twinkle var(--duration) infinite;
+        }
+        @keyframes twinkle { 0%, 100% { opacity: 0.2; } 50% { opacity: 0.8; } }
+
+        /* Luna Perspectiva (Reducida) */
+        .moon-perspective {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            background: #111;
+            border-radius: 50%;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .moon-light {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: #f8fafc;
+            box-shadow: inset -5px 0 15px rgba(0,0,0,0.2), 0 0 20px rgba(255,255,255,0.3);
+            transition: all 0.1s linear;
+        }
+
+        /* Diagrama Orbital Compacto */
+        .orbital-view {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px;
+            width: 100%;
+        }
+
+        /* Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: rgba(255,255,255,0.1);
+            height: 8px;
+            border-radius: 4px;
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #ef4444;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid white;
+        }
+
+        .btn-mode.active {
+            background: white;
+            color: #020617;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div id="stars"></div>
+
+        <header class="flex justify-between items-center mb-2 z-10">
+            <div class="flex flex-col">
+                <h1 class="text-white font-black text-sm uppercase leading-none">Selenografía</h1>
+                <span class="text-[8px] text-red-500 font-bold uppercase tracking-widest">Fases Principales</span>
+            </div>
+            <div class="flex gap-1 bg-white/5 p-0.5 rounded-lg border border-white/10">
+                <button id="btn-explore" class="btn-mode active px-3 py-1 rounded-md text-[8px] font-black uppercase transition-all">Explorar</button>
+                <button id="btn-quiz" class="btn-mode px-3 py-1 rounded-md text-[8px] font-black uppercase transition-all">Desafío</button>
+            </div>
+        </header>
+
+        <div class="flex-grow flex flex-col items-center justify-around z-10 py-1">
+            
+            <div id="quiz-instruction" class="hidden text-amber-400 font-black text-[10px] uppercase tracking-widest animate-pulse">
+                Busca: <span id="target-phase-name" class="text-white text-sm ml-1 italic">---</span>
+            </div>
+
+            <div class="flex flex-col items-center">
+                <span class="text-[8px] text-white/20 font-black uppercase tracking-widest mb-1">Desde la Tierra</span>
+                <div class="moon-perspective">
+                    <div id="moon-light" class="moon-light"></div>
+                </div>
+            </div>
+
+            <div id="phase-text" class="text-xl font-black text-white text-center uppercase italic">Luna Nueva</div>
+
+            <!-- Diagrama Orbital Compacto -->
+            <div class="orbital-view flex items-center justify-between relative">
+                <div class="flex flex-col items-center">
+                    <div class="text-2xl">☀️</div>
+                    <span class="text-[6px] text-amber-500 font-black uppercase">Sol</span>
+                </div>
+
+                <div class="relative w-32 h-14 flex items-center justify-center">
+                    <div class="w-8 h-8 text-xl flex items-center justify-center bg-blue-500 rounded-full border border-white/20 shadow-[0_0_10px_rgba(59,130,246,0.5)]">🌍</div>
+                    <div id="moon-orbit-marker" class="absolute w-4 h-4 bg-slate-200 rounded-full border border-white flex items-center justify-center text-[8px] transition-all duration-100">🌑</div>
+                </div>
+
+                <div class="text-[7px] text-white/30 font-black uppercase text-right leading-tight">
+                    Diagrama<br>Orbital
+                </div>
+            </div>
+
+            <!-- Controles -->
+            <div id="controls-explore" class="w-full px-4">
+                <input type="range" id="moon-slider" min="0" max="100" value="0">
+                <div class="flex justify-between text-[8px] text-white/30 font-black uppercase mt-2">
+                    <span>Posición Órbita</span>
+                    <span id="cycle-percent">0%</span>
+                </div>
+            </div>
+
+            <div id="controls-quiz" class="hidden w-full flex flex-col items-center">
+                <button id="btn-check" class="bg-red-600 text-white font-black py-2.5 px-8 rounded-xl text-sm shadow-lg hover:bg-red-500 active:scale-95 transition-all">
+                    CONFIRMAR FASE
+                </button>
+                <div class="mt-2 text-white/40 text-[8px] font-black uppercase">
+                    Puntos: <span id="quiz-score" class="text-white text-xs">0</span> / 5
+                </div>
+            </div>
+        </div>
+
+        <footer class="mt-1 flex justify-between items-center opacity-30 z-10 border-t border-white/5 pt-1">
+            <span class="text-[7px] font-black text-white uppercase tracking-widest">A. Jiménez | 6º Primaria</span>
+            <span class="text-[7px] font-black text-white uppercase tracking-widest">C.S.N. Navarra</span>
+        </footer>
+    </div>
+
+    <!-- Pantalla Victoria -->
+    <div id="win-overlay" class="hidden fixed inset-0 bg-slate-950/95 z-50 flex flex-col items-center justify-center text-center p-4">
+        <div class="text-6xl mb-2 animate-bounce">🌕</div>
+        <h2 class="text-2xl font-black text-white italic uppercase tracking-tighter">¡LOGRADO!</h2>
+        <p class="text-slate-400 text-sm mb-6">Dominas los ciclos lunares.</p>
+        <button onclick="location.reload()" class="bg-red-600 text-white font-black py-3 px-10 rounded-xl text-lg shadow-xl">REINTENTAR</button>
+    </div>
+
+    <script>
+        const slider = document.getElementById('moon-slider');
+        const moonLight = document.getElementById('moon-light');
+        const phaseText = document.getElementById('phase-text');
+        const orbitMarker = document.getElementById('moon-orbit-marker');
+        const cyclePercent = document.getElementById('cycle-percent');
+        const btnExplore = document.getElementById('btn-explore');
+        const btnQuiz = document.getElementById('btn-quiz');
+        const controlsExplore = document.getElementById('controls-explore');
+        const controlsQuiz = document.getElementById('controls-quiz');
+        const quizInstruction = document.getElementById('quiz-instruction');
+        const targetPhaseName = document.getElementById('target-phase-name');
+        const quizScoreEl = document.getElementById('quiz-score');
+        const btnCheck = document.getElementById('btn-check');
+
+        let mode = 'explore';
+        let quizScore = 0;
+        let targetPhase = "";
+
+        // Estrellas
+        for (let i = 0; i < 40; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.style.left = `${Math.random() * 100}%`;
+            star.style.top = `${Math.random() * 100}%`;
+            star.style.width = `1px`;
+            star.style.height = `1px`;
+            star.style.setProperty('--duration', `${2 + Math.random() * 2}s`);
+            document.getElementById('stars').appendChild(star);
+        }
+
+        function updateMoon(val) {
+            const percent = parseInt(val);
+            cyclePercent.textContent = percent + "%";
+
+            const angle = (percent / 100) * Math.PI * 2;
+            const orbitX = 50 - Math.cos(angle) * 40; 
+            const orbitY = 50 - Math.sin(angle) * 25;
+            orbitMarker.style.left = orbitX + "%";
+            orbitMarker.style.top = orbitY + "%";
+
+            if (percent <= 50) {
+                const w = percent * 2;
+                moonLight.style.left = (100 - w) + "%";
+                moonLight.style.width = w + "%";
+                moonLight.style.clipPath = `ellipse(${percent}% 100% at 100% 50%)`;
+                if (percent > 25) {
+                    moonLight.style.left = "0%";
+                    moonLight.style.width = "100%";
+                    moonLight.style.clipPath = `ellipse(${50 + (percent-25)*2}% 100% at 100% 50%)`;
+                }
+            } else {
+                const p = percent - 50;
+                const invPercent = 50 - p;
+                moonLight.style.left = "0%";
+                moonLight.style.width = "100%";
+                moonLight.style.clipPath = `ellipse(${invPercent}% 100% at 0% 50%)`;
+            }
+
+            let currentPhase = "Transición";
+            if (percent <= 4 || percent >= 96) currentPhase = "Luna Nueva";
+            else if (percent >= 22 && percent <= 28) currentPhase = "Cuarto Creciente";
+            else if (percent >= 47 && percent <= 53) currentPhase = "Luna Llena";
+            else if (percent >= 72 && percent <= 78) currentPhase = "Cuarto Menguante";
+
+            phaseText.textContent = currentPhase;
+            phaseText.style.color = currentPhase === "Transición" ? "rgba(255,255,255,0.2)" : "white";
+            return currentPhase;
+        }
+
+        slider.oninput = (e) => updateMoon(e.target.value);
+
+        btnExplore.onclick = () => {
+            mode = 'explore';
+            btnExplore.classList.add('active'); btnQuiz.classList.remove('active');
+            controlsExplore.classList.remove('hidden'); controlsQuiz.classList.add('hidden');
+            quizInstruction.classList.add('hidden'); phaseText.classList.remove('hidden');
+        };
+
+        btnQuiz.onclick = () => {
+            mode = 'quiz';
+            btnQuiz.classList.add('active'); btnExplore.classList.remove('active');
+            controlsQuiz.classList.remove('hidden'); quizInstruction.classList.remove('hidden');
+            phaseText.classList.add('hidden'); newQuizTask();
+        };
+
+        function newQuizTask() {
+            const possible = ["Luna Nueva", "Cuarto Creciente", "Luna Llena", "Cuarto Menguante"];
+            targetPhase = possible[Math.floor(Math.random() * possible.length)];
+            targetPhaseName.textContent = targetPhase;
+        }
+
+        btnCheck.onclick = () => {
+            const current = updateMoon(slider.value);
+            if (current === targetPhase) {
+                quizScore++;
+                quizScoreEl.textContent = quizScore;
+                if (quizScore >= 5) document.getElementById('win-overlay').classList.remove('hidden');
+                else {
+                    btnCheck.innerText = "¡BIEN! +1";
+                    btnCheck.style.backgroundColor = "#10b981";
+                    setTimeout(() => {
+                        btnCheck.innerText = "CONFIRMAR FASE";
+                        btnCheck.style.backgroundColor = "#e11d48";
+                        newQuizTask();
+                    }, 600);
+                }
+            } else {
+                btnCheck.innerText = "NO ES ESA";
+                btnCheck.style.backgroundColor = "#475569";
+                setTimeout(() => {
+                    btnCheck.innerText = "CONFIRMAR FASE";
+                    btnCheck.style.backgroundColor = "#e11d48";
+                }, 600);
+            }
+        };
+
+        updateMoon(0);
+    </script>
+</body>
+</html>
